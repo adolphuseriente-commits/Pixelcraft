@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile holding preferences and account metadata",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique Google user ID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name from Google Sign-In"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "Avatar URL"
+        },
+        "projectCount": {
+          "type": "integer",
+          "description": "Number of saved designs in cloud"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when profile was created via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when profile was last updated via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["userId", "email", "createdAt", "updatedAt"]
+    },
+    "DesignProject": {
+      "title": "DesignProject",
+      "description": "Saved Photoshop-style multi-layer project design",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Google user ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Project title or name"
+        },
+        "canvasWidth": {
+          "type": "integer",
+          "description": "Canvas width in pixels"
+        },
+        "canvasHeight": {
+          "type": "integer",
+          "description": "Canvas height in pixels"
+        },
+        "presetName": {
+          "type": "string",
+          "description": "Aspect ratio preset name"
+        },
+        "backgroundColor": {
+          "type": "integer",
+          "description": "Canvas background color ARGB long"
+        },
+        "layerCount": {
+          "type": "integer",
+          "description": "Total number of layers"
+        },
+        "layersJson": {
+          "type": "string",
+          "description": "Serialized JSON of all layers"
+        },
+        "thumbnailBase64": {
+          "type": "string",
+          "description": "Optional low-res preview data"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modified timestamp via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["userId", "title", "canvasWidth", "canvasHeight", "presetName", "layerCount", "layersJson", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user account information"
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": "DesignProject",
+      "description": "Stores user design projects with multi-layer composition"
+    }
+  }
+}

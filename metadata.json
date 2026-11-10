@@ -1,0 +1,6 @@
+{
+  "name": "Photocraft",
+  "description": "Professional Photoshop-inspired design studio featuring multi-layer canvas, blend modes, adjustments, brushes, typography, shapes, and filters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

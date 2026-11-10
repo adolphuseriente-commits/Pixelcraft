@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common security helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // UserProfile validation helper
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.email is string && data.email.size() <= 128 &&
+             (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('photoUrl' in data) || data.photoUrl == null || (data.photoUrl is string && data.photoUrl.size() <= 1000)) &&
+             (!('projectCount' in data) || data.projectCount is int) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // DesignProject validation helper
+    function isValidDesignProject(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.canvasWidth is int && data.canvasWidth >= 100 && data.canvasWidth <= 8000 &&
+             data.canvasHeight is int && data.canvasHeight >= 100 && data.canvasHeight <= 8000 &&
+             data.presetName is string && data.presetName.size() <= 50 &&
+             (!('backgroundColor' in data) || data.backgroundColor == null || data.backgroundColor is int) &&
+             data.layerCount is int && data.layerCount >= 0 && data.layerCount <= 200 &&
+             data.layersJson is string && data.layersJson.size() <= 500000 &&
+             (!('thumbnailBase64' in data) || data.thumbnailBase64 == null || (data.thumbnailBase64 is string && data.thumbnailBase64.size() <= 200000)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Collection: Users
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) && isValidId(userId) &&
+                       incoming().userId == userId &&
+                       incoming().keys().hasAll(['userId', 'email', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'email', 'displayName', 'photoUrl', 'projectCount', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) && isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoUrl', 'projectCount', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection: Design Projects
+      match /projects/{projectId} {
+        allow get: if isOwner(userId) && isValidId(projectId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) && isValidId(projectId) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'title', 'canvasWidth', 'canvasHeight', 'presetName', 'layerCount', 'layersJson', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'canvasWidth', 'canvasHeight', 'presetName', 'backgroundColor', 'layerCount', 'layersJson', 'thumbnailBase64', 'createdAt', 'updatedAt']) &&
+                         isValidDesignProject(incoming());
+
+        allow update: if isOwner(userId) && isValidId(projectId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidDesignProject(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'canvasWidth', 'canvasHeight', 'presetName', 'backgroundColor', 'layerCount', 'layersJson', 'thumbnailBase64', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(projectId);
+      }
+    }
+  }
+}
